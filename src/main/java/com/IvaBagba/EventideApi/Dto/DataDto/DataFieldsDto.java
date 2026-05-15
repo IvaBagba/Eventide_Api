@@ -1,11 +1,11 @@
-package com.IvaBagba.EventideRework.Dto;
+package com.IvaBagba.EventideApi.Dto.DataDto;
 
 import lombok.Data;
 
 import java.util.List;
 
 @Data
-public class EventideDataFieldsDto {
+public class DataFieldsDto {
 
 
 

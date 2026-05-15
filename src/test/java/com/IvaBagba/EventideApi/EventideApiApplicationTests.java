@@ -1,10 +1,10 @@
-package com.IvaBagba.EventideRework;
+package com.IvaBagba.EventideApi;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class EventideReworkApplicationTests {
+class EventideApiApplicationTests {
 
 	@Test
 	void contextLoads() {

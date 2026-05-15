@@ -1,4 +1,4 @@
-package com.IvaBagba.EventideRework.Models;
+package com.IvaBagba.EventideApi.Models;
 
 
 import jakarta.persistence.*;
@@ -15,6 +15,10 @@ public class EventideUser {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserRoles userRole;
 
     @Column(unique = true, nullable = false)
     private String dni;

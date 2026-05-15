@@ -1,4 +1,4 @@
-package com.IvaBagba.EventideRework.Models;
+package com.IvaBagba.EventideApi.Models;
 
 import jakarta.persistence.*;
 import lombok.*;
