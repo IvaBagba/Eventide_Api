@@ -48,5 +48,26 @@ public class DataInit implements CommandLineRunner {
 
                 userRepository.save(admin);
             }
+
+            if (userRepository.findByDni("87654321B").isEmpty()) {
+
+                EventideUser user = new EventideUser();
+
+                user.setDni("87654321B");
+                user.setUserName("Usuario");
+                user.setUserSurname("Prueba");
+
+                // Contraseña real: 1234
+                // En base de datos se guarda hasheada.
+                user.setUserPass(passwordEncoder.encode("1234"));
+
+                user.setUserRole(UserRoles.USER);
+
+                user.setCursosTags(List.of(
+                        CursosTags.FP
+                ));
+
+                userRepository.save(user);
+            }
         }
 }

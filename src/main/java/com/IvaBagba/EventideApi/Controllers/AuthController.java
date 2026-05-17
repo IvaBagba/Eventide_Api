@@ -3,6 +3,7 @@ package com.IvaBagba.EventideApi.Controllers;
 import com.IvaBagba.EventideApi.Dto.UserDto.LoginRequestDto;
 import com.IvaBagba.EventideApi.Dto.UserDto.LoginResponseDto;
 import com.IvaBagba.EventideApi.Services.AuthService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,9 +21,15 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDto> login(
+    public ResponseEntity<?> login(
             @RequestBody LoginRequestDto loginRequest
     ) {
-        return ResponseEntity.ok(authService.login(loginRequest));
+
+        try {
+            LoginResponseDto response = authService.login(loginRequest);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        }
     }
 }
