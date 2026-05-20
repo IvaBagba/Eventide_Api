@@ -2,8 +2,9 @@ package com.IvaBagba.EventideApi.Services;
 
 import com.IvaBagba.EventideApi.Dto.EventDto.CreateEventDto;
 import com.IvaBagba.EventideApi.Dto.EventDto.ResponseEventDto;
-import com.IvaBagba.EventideApi.Models.EventideEvent;
+import com.IvaBagba.EventideApi.Models.*;
 import com.IvaBagba.EventideApi.Repo.EventsRepository;
+import com.IvaBagba.EventideApi.Repo.UserRepository;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
@@ -14,9 +15,11 @@ import java.util.List;
 public class EventsService {
 
     private final EventsRepository eventsRepository;
+    private final UserRepository userRepository;
 
-    public EventsService(EventsRepository eventsRepository) {
+    public EventsService(EventsRepository eventsRepository, UserRepository userRepository) {
         this.eventsRepository = eventsRepository;
+        this.userRepository = userRepository;
     }
 
     public List<ResponseEventDto> getEventos() {
@@ -94,5 +97,53 @@ public class EventsService {
         eventideEvent.setCursosTags(event.getCursosTags());
         eventideEvent.setEventStatus(event.getEventStatus());
         return eventideEvent;
+    }
+
+    //Filtrar eventos enviados al usuario segun sus tags y status del evento
+    public List<ResponseEventDto> getEventosPerUserTag(Long userId) {
+        EventideUser user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        List<EventideEvent> allEvents = eventsRepository.findAll();
+        List<ResponseEventDto> filteredEvents = new ArrayList<>();
+
+        for  (EventideEvent event : allEvents) {
+            if(userEventCheck(user, event)){
+                filteredEvents.add(toResponseEntity(event));
+            }
+        }
+
+        return filteredEvents;
+    }
+
+    //Condicionales para que un evento se muestre
+    private boolean userEventCheck(EventideUser user, EventideEvent event) {
+        //Si es admin enviamos el evento
+        if (user.getUserRole() == UserRoles.ADMIN) {
+            return true;
+        }
+
+        //Si es un borrador o esta cancelado el evento no se puede ver
+        if (event.getEventStatus() == EventStatus.BORRADOR || event.getEventStatus() == EventStatus.CANCELADO) {
+            return false;
+        }
+
+        //Si el evento no tiene tags no se puede ver
+        if (event.getCursosTags() == null || event.getCursosTags().isEmpty()) {
+            return false;
+        }
+
+        //Si el evento tiene tags no es borrador ni cancelado y la tag que tiene es TODOS el evento se ve
+        if (event.getCursosTags().contains(CursosTags.TODOS)) {
+            return true;
+        }
+
+        //Si el USUARIO no tiene tags no ve los eventos que no sean para todos
+        if (user.getCursosTags() == null || user.getCursosTags().isEmpty()) {
+            return false;
+        }
+
+        //Si no como condicion final miramos que tags tiene el evento y vemos si usuario contiene al menos una de esas tags entonces se muestra el evento o no
+        return event.getCursosTags().stream().anyMatch(user.getCursosTags()::contains);
     }
 }

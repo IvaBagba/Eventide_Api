@@ -33,6 +33,11 @@ public class EventController {
     public ResponseEntity<ResponseEventDto> getEventosById(@PathVariable long id){
         return ResponseEntity.ok(eventsService.getEventoById(id));
     }
+//Buscar evento por los tags de usuario
+    @GetMapping("/user/{userID}")
+    public ResponseEntity<List<ResponseEventDto>> getEventosByUser(@PathVariable long userID){
+        return ResponseEntity.ok(eventsService.getEventosPerUserTag(userID));
+    }
 
 //Crear nuevo evento
     @PostMapping
@@ -53,4 +58,5 @@ public class EventController {
         eventsService.deleteEvento(id);
         return ResponseEntity.noContent().build();
     }
+
 }
