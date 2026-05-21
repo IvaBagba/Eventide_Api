@@ -3,6 +3,7 @@ package com.IvaBagba.EventideApi.Controllers;
 
 import com.IvaBagba.EventideApi.Dto.EventDto.CreateEventDto;
 import com.IvaBagba.EventideApi.Dto.EventDto.ResponseEventDto;
+import com.IvaBagba.EventideApi.Repo.EventsRepository;
 import com.IvaBagba.EventideApi.Services.EventsService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -40,23 +41,36 @@ public class EventController {
     }
 
 //Crear nuevo evento
-    @PostMapping
-    public ResponseEntity<ResponseEventDto> addEvento(@RequestBody CreateEventDto eventDto) {
-        return ResponseEntity.ok(eventsService.addEvento(eventDto));
+    @PostMapping("/admin/{userID}")
+    public ResponseEntity<ResponseEventDto> addEvento(@RequestBody CreateEventDto eventDto, @PathVariable long userID) {
+        return ResponseEntity.ok(eventsService.addEvento(eventDto, userID));
     }
+//Añadir usuario a la lista de un evento
+    @PostMapping("/{id}/register/{userID}")
+    public ResponseEntity<ResponseEventDto> registerToEvento(@PathVariable long id, @PathVariable long userID){
+        return ResponseEntity.ok(eventsService.addUserToEvent(id,userID));
+    }
+
 //Modificar evento
-    @PutMapping("/{id}")
+    @PutMapping("/admin/{id}/{userID}")
     public ResponseEntity<ResponseEventDto> updateEvento(
             @PathVariable long id,
+            @PathVariable long userID,
             @RequestBody CreateEventDto eventDto
     ) {
-        return ResponseEntity.ok(eventsService.updateEvento(id, eventDto));
+        return ResponseEntity.ok(eventsService.updateEvento(id, eventDto, userID));
     }
 //Eliminar evento
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteEvento(@PathVariable long id) {
-        eventsService.deleteEvento(id);
+    @DeleteMapping("/admin/{id}/{userID}")
+    public ResponseEntity<Void> deleteEvento(@PathVariable long id,  @PathVariable long userID) {
+        eventsService.deleteEvento(id, userID);
         return ResponseEntity.noContent().build();
     }
+//Eliminar a un usuario de un evento
+    @DeleteMapping("/{id}/register/{userID}")
+    public ResponseEntity<ResponseEventDto> unregisterFromEvento(@PathVariable long id, @PathVariable long userID) {
+        return ResponseEntity.ok(eventsService.removeUserFromEvent(id,userID));
+    }
+
 
 }

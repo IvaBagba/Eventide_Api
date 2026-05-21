@@ -4,6 +4,7 @@ package com.IvaBagba.EventideApi.Models;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -44,5 +45,5 @@ public class EventideUser {
             joinColumns = @JoinColumn(name = "usuario_id"),
             inverseJoinColumns = @JoinColumn(name = "evento_id")
     )
-    private List<EventideEvent> eventosApuntados;
+    private List<EventideEvent> eventosApuntados = new ArrayList<>();
 }

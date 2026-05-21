@@ -5,6 +5,7 @@ import com.IvaBagba.EventideApi.Dto.EventDto.ResponseEventDto;
 import com.IvaBagba.EventideApi.Models.*;
 import com.IvaBagba.EventideApi.Repo.EventsRepository;
 import com.IvaBagba.EventideApi.Repo.UserRepository;
+import jakarta.transaction.Transactional;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
@@ -28,24 +29,15 @@ public class EventsService {
         List<ResponseEventDto> eventosDto = new ArrayList<>();
 
         for (EventideEvent eventideEvent : eventosRaw) {
-            ResponseEventDto ResponseEventDto = new ResponseEventDto();
-            ResponseEventDto.setId(eventideEvent.getId());
-            ResponseEventDto.setEventName(eventideEvent.getEventName());
-            ResponseEventDto.setEventDesc(eventideEvent.getEventDesc());
-            ResponseEventDto.setEventDate(eventideEvent.getEventDate());
-            ResponseEventDto.setEventLocation(eventideEvent.getEventLocation());
-            ResponseEventDto.setEventTime(eventideEvent.getEventTime());
-            ResponseEventDto.setCursosTags(eventideEvent.getCursosTags());
-            ResponseEventDto.setEventStatus(eventideEvent.getEventStatus());
-
-            eventosDto.add(ResponseEventDto);
-
+            eventosDto.add(toResponseEntity(eventideEvent));
         }
         return eventosDto;
 
     }
 
-    public ResponseEventDto addEvento(CreateEventDto eventDto) {
+    public ResponseEventDto addEvento(CreateEventDto eventDto, long userID) {
+        isAdmin(userID);
+
         EventideEvent eventideEvent = new EventideEvent();
         eventideEvent.setEventName(eventDto.getEventName());
         eventideEvent.setEventDesc(eventDto.getEventDesc());
@@ -59,8 +51,10 @@ public class EventsService {
         return toResponseEntity(eventideEvent);
     }
 
-    public ResponseEventDto updateEvento(long id, CreateEventDto req) {
-        EventideEvent updEvent = eventsRepository.findById(id).get();
+    public ResponseEventDto updateEvento(long id, CreateEventDto req, long userID) {
+        isAdmin(userID);
+
+        EventideEvent updEvent = eventsRepository.findById(id).orElseThrow(() -> new RuntimeException("Evento no encontrado"));
 
         updEvent.setEventName(req.getEventName());
         updEvent.setEventDesc(req.getEventDesc());
@@ -75,8 +69,17 @@ public class EventsService {
         return toResponseEntity(updEvent);
     }
 
-    public void deleteEvento(long id) {
-            EventideEvent event = eventsRepository.findById(id).get();
+    @Transactional
+    public void deleteEvento(long id, long userID) {
+            isAdmin(userID);
+
+            EventideEvent event = eventsRepository.findById(id).orElseThrow(() -> new RuntimeException("Evento no encontrado"));
+
+            for (EventideUser user : event.getUsuariosApuntados()){
+                user.getEventosApuntados().remove(event);
+            }
+
+            event.getUsuariosApuntados().clear();
             eventsRepository.delete(event);
     }
 
@@ -96,6 +99,10 @@ public class EventsService {
         eventideEvent.setEventTime(event.getEventTime());
         eventideEvent.setCursosTags(event.getCursosTags());
         eventideEvent.setEventStatus(event.getEventStatus());
+
+        List<Long> regUsersID = event.getUsuariosApuntados().stream().map(EventideUser::getId).toList();
+
+        eventideEvent.setRegUsersID(regUsersID);
         return eventideEvent;
     }
 
@@ -145,5 +152,58 @@ public class EventsService {
 
         //Si no como condicion final miramos que tags tiene el evento y vemos si usuario contiene al menos una de esas tags entonces se muestra el evento o no
         return event.getCursosTags().stream().anyMatch(user.getCursosTags()::contains);
+    }
+
+    //Transactional hace que solo se haga la accion si todos los cambios se hacen correctamente
+    @Transactional
+    public ResponseEventDto addUserToEvent(long id, long userID) {
+        EventideEvent event = eventsRepository.findById(id).orElseThrow(() -> new RuntimeException("Evento no encontrado"));
+        EventideUser user = userRepository.findById(userID).orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        //Condiciones en las que no puedes inscribirte a un evento
+        //Si eres admin
+        if (user.getUserRole() == UserRoles.ADMIN) {
+            throw new RuntimeException("Los administradores no pueden inscribirse a los eventos");
+        }
+        //Si no puedes visualizar el evento (no esta en tu lista)
+        if (!userEventCheck(user, event)) {
+            throw new RuntimeException("No puedes apuntarte a este evento");
+        }
+        //Si la lista no esta abierta
+        if (event.getEventStatus() != EventStatus.LISTA_ABIERTA) {
+            throw new RuntimeException("La inscripción a este evento ha finalizado");
+        }
+        //---//
+
+        if (event.getUsuariosApuntados().contains(user)) {
+            return toResponseEntity(event);
+        }
+
+        event.getUsuariosApuntados().add(user);
+        user.getEventosApuntados().add(event);
+
+        eventsRepository.save(event);
+
+        return toResponseEntity(event);
+    }
+
+    public ResponseEventDto removeUserFromEvent(long id, long userID) {
+        EventideEvent event = eventsRepository.findById(id).orElseThrow(() -> new RuntimeException("Evento no encontrado"));
+        EventideUser user = userRepository.findById(userID).orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        event.getUsuariosApuntados().remove(user);
+        user.getEventosApuntados().remove(event);
+        eventsRepository.save(event);
+        return toResponseEntity(event);
+    }
+
+    private EventideUser isAdmin(long userID) {
+        EventideUser user = userRepository.findById(userID).orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        if (user.getUserRole() != UserRoles.ADMIN) {
+            throw new RuntimeException("No tienes permisos");
+        }
+
+        return user;
     }
 }

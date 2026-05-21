@@ -18,4 +18,6 @@ public class ResponseEventDto {
     private String eventLocation;
     private EventStatus eventStatus;
     private List<CursosTags> cursosTags;
+
+    private List<Long> regUsersID;
 }
